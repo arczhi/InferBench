@@ -375,10 +375,44 @@ class ExperimentRunner:
                 raise SystemExit(f"only {free_gb:.1f} GiB free under {probe_path}")
         except OSError:
             pass
-        gpu = run_cmd(["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"], timeout=10)
+        gpu = run_cmd(
+            [
+                "nvidia-smi",
+                "--query-gpu=index,name,memory.total,memory.used,memory.free",
+                "--format=csv,noheader,nounits",
+            ],
+            timeout=10,
+        )
         if not gpu["ok"]:
             raise SystemExit(f"nvidia-smi failed: {gpu['err']}")
-        print(f"[{utc_now()}] gpu: {gpu['out'].splitlines()[0] if gpu['out'] else '?'}")
+        rows = []
+        for line in gpu["out"].splitlines():
+            cols = [c.strip() for c in line.split(",")]
+            if len(cols) == 5:
+                rows.append(cols)
+        if not rows:
+            raise SystemExit(f"cannot parse nvidia-smi output: {gpu['out']!r}")
+        wanted = str(self.cfg.docker.gpu_device).split(",")[0].strip()
+        selected = next((r for r in rows if r[0] == wanted), rows[0])
+        index, name, total_mib, used_mib, free_mib = selected
+        total = float(total_mib)
+        used = float(used_mib)
+        free = float(free_mib)
+        needed = self.cfg.engine.gpu_memory_utilization * total
+        print(
+            f"[{utc_now()}] gpu {index}: {name}, {used / 1024:.1f}/{total / 1024:.1f} GiB used, "
+            f"{free / 1024:.1f} GiB free; watermark needs {needed / 1024:.1f} GiB"
+        )
+        if free < needed:
+            raise SystemExit(
+                f"GPU {index} has only {free:.0f} MiB free but the "
+                f"{self.cfg.engine.gpu_memory_utilization:.2f} watermark needs {needed:.0f} MiB.\n"
+                f"Foreign GPU memory: {used:.0f} MiB.\n"
+                "Stop leftover experiment containers/processes first:\n"
+                "  ./scripts/cleanup.sh\n"
+                "  nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv\n"
+                "Or lower EXP_GPU_MEM_UTIL (for example 0.85)."
+            )
         docker = run_cmd(["docker", "info", "--format", "{{.ServerVersion}}"], timeout=15)
         if not docker["ok"]:
             raise SystemExit(f"docker daemon not reachable: {docker['err']}")
