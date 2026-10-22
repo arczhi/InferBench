@@ -178,11 +178,13 @@ def analyze_arm(levels: List[Dict[str, Any]], cfg: Config) -> Dict[str, Any]:
         peak_cache = max(
             [((r.get("engine") or {}).get("cache_usage_peak") or 0) for r in rows] or [0]
         )
-        hit_rates = [
-            r.get("cache_hit_rate_usage")
-            for r in rows
-            if r.get("cache_hit_rate_usage") is not None
-        ]
+        hit_rates = []
+        for row in rows:
+            hit = row.get("cache_hit_rate_usage")
+            if not hit:
+                hit = (row.get("engine") or {}).get("apc_hit_rate_metric")
+            if hit is not None:
+                hit_rates.append(hit)
         context_summary[str(context)] = {
             "concurrency_tested": [r["concurrency"] for r in rows],
             "max_safe_concurrency": best["concurrency"] if best else 0,

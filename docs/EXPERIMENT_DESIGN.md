@@ -28,6 +28,11 @@ varies the *actual* context length inside that budget.
   counters (`vllm:prefix_cache_hits_total` / `queries_total`,
   `sglang:cached_tokens_total` / `prompt_tokens_total`) are recorded as a
   secondary, cross-checking signal.
+- Some vLLM builds return `cached_tokens=0` in the OpenAI usage object even when
+  APC is working. The harness therefore also takes synchronous engine-counter
+  snapshots immediately before and after the measured sessions (excluding the
+  prefix warmup) and reports that as `apc_hit_rate_sessions`. Use it when the
+  usage-based number is zero but TTFT is implausibly low.
 
 ### Metric definitions
 

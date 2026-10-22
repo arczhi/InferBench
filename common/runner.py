@@ -114,6 +114,14 @@ def metric_value(metrics: Dict[str, float], names: Sequence[str]) -> Optional[fl
     return None
 
 
+def metric_delta(before: Dict[str, float], after: Dict[str, float], names: Sequence[str]) -> Optional[float]:
+    start = metric_value(before, names)
+    end = metric_value(after, names)
+    if start is None or end is None:
+        return None
+    return end - start
+
+
 def _metric_series(samples: Sequence[Dict[str, Any]], names: Sequence[str]) -> List[float]:
     out: List[float] = []
     for sample in samples:
@@ -541,6 +549,7 @@ class ExperimentRunner:
             }
             if not warm_res.ok:
                 print(f"[{utc_now()}] prefix warmup failed at N={plan.concurrency}: {warm_res.error}")
+        session_metrics_start = engine.metrics() if hasattr(engine, "metrics") else {}
         started_mono = time.monotonic()
         deadline = started_mono + self.level_timeout_s
 
@@ -666,6 +675,14 @@ class ExperimentRunner:
         req_writer.close()
         sess_writer.close()
 
+        session_metrics_end = engine.metrics() if hasattr(engine, "metrics") else {}
+        apc_hit_rate_sessions: Optional[float] = None
+        if session_metrics_start and session_metrics_end:
+            hits_delta = metric_delta(session_metrics_start, session_metrics_end, APC_HITS)
+            queries_delta = metric_delta(session_metrics_start, session_metrics_end, APC_QUERIES)
+            if hits_delta is not None and queries_delta is not None and queries_delta > 0:
+                apc_hit_rate_sessions = round(hits_delta / queries_delta, 4)
+
         ok_records = [r for r in records if r.get("ok")]
         ttft = [r["ttft_ms"] for r in ok_records if r.get("ttft_ms") is not None]
         tpot = [r["tpot_ms"] for r in ok_records if r.get("tpot_ms") is not None]
@@ -706,6 +723,7 @@ class ExperimentRunner:
             "prefill_tok_s": round(prompt_tokens / wall, 2) if wall else None,
             "total_tok_s": round((prompt_tokens + completion_tokens) / wall, 2) if wall else None,
             "engine": {},
+            "apc_hit_rate_sessions": apc_hit_rate_sessions,
             "phases": _phase_stats(records),
             "prefix_warmup": prefix_warmup,
             "timed_out": timed_out,
@@ -851,6 +869,8 @@ class ExperimentRunner:
                     ]
                 self._engine_samples[index] = samples
                 row["engine"] = level_engine_stats(self._engine_samples[index])
+                if row.get("apc_hit_rate_sessions") is not None:
+                    row["engine"]["apc_hit_rate_metric"] = row["apc_hit_rate_sessions"]
                 result["levels"].append(row)
                 with open(os.path.join(arm_dir, "levels.jsonl"), "a", encoding="utf-8") as fh:
                     fh.write(json.dumps(row, default=str) + "\n")

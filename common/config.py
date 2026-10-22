@@ -35,7 +35,7 @@ class EngineConfig:
     startup_timeout_s: int = 1800
     request_timeout_s: int = 900
     health_interval_s: int = 5
-    metrics_interval_s: int = 2
+    metrics_interval_s: float = 1.0
     dtype: str = "bfloat16"
     vllm_port: int = 8000
     sglang_port: int = 30000

@@ -43,8 +43,15 @@ def _level_rows(arm: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "cache%": round(100 * engine["cache_usage_peak"], 1) if engine.get("cache_usage_peak") is not None else None,
                 "wait": engine.get("waiting_peak"),
                 "preempt": engine.get("preemptions_delta"),
-                "apc hit%": round(100 * level["cache_hit_rate_usage"], 1)
-                if level.get("cache_hit_rate_usage") is not None
+                "apc hit%": round(
+                    100
+                    * (
+                        level.get("cache_hit_rate_usage")
+                        or (engine.get("apc_hit_rate_metric") or 0)
+                    ),
+                    1,
+                )
+                if (level.get("cache_hit_rate_usage") is not None or engine.get("apc_hit_rate_metric") is not None)
                 else None,
                 "safe": "yes" if level.get("safe") else "no",
             }
