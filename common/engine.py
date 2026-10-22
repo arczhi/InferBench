@@ -18,6 +18,11 @@ SGLANG_MODULE = "sglang.launch_server"
 HELP_CACHE = os.path.join(ROOT, "runs", "_engine_help")
 
 
+def looks_like_help(text: str) -> bool:
+    lowered = text.lower()
+    return "usage:" in lowered and len(text) > 200
+
+
 class EngineError(RuntimeError):
     pass
 
@@ -106,7 +111,6 @@ class DockerEngine:
         self._started = False
         self._help_text: Optional[str] = None
         self.drop_served_model_name = False
-        self.drop_disable_log_requests = False
 
     # ------------------------------------------------------------------ docker
     def _docker(self, args: Sequence[str], timeout: float = 60.0, check: bool = False) -> Dict[str, Any]:
@@ -195,11 +199,17 @@ class DockerEngine:
             ],
             timeout=300,
         )
-        if not res["ok"]:
+        text = (res["out"] + "\n" + res["err"]).strip()
+        if not text or not looks_like_help(text):
             print(f"[WARN] could not read --help from {self.image}: {res['err'][:300]}")
             self._help_text = ""
             return self._help_text
-        self._help_text = res["out"] + "\n" + res["err"]
+        if not res["ok"]:
+            print(
+                f"[{utc_now()}] --help exited {res['rc']} but printed usage; "
+                "using it for flag validation"
+            )
+        self._help_text = text
         try:
             with open(cache_path, "w", encoding="utf-8") as fh:
                 fh.write(self._help_text)
@@ -245,8 +255,6 @@ class DockerEngine:
             ]
             if not self.drop_served_model_name:
                 base += ["--served-model-name", c.served_model_name]
-            if not self.drop_disable_log_requests:
-                base += ["--disable-log-requests"]
             return base + common + self.engine_args
         base = [
             "--model-path",
@@ -268,10 +276,6 @@ class DockerEngine:
                 if not self.drop_served_model_name:
                     print(f"[WARN] {self.kind} image has no --served-model-name; using /v1/models id")
                 self.drop_served_model_name = True
-            elif flag == "--disable-log-requests":
-                if not self.drop_disable_log_requests:
-                    print(f"[WARN] {self.kind} image has no --disable-log-requests; dropping it")
-                self.drop_disable_log_requests = True
             else:
                 remaining.append(flag)
         return remaining

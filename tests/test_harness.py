@@ -16,7 +16,7 @@ sys.path.insert(0, ROOT)
 
 from common.client import build_payload, chat_nonstream, chat_stream
 from common.config import Config
-from common.engine import DockerEngine
+from common.engine import DockerEngine, looks_like_help
 from common.guard import Guard
 from common.plot import line_chart_svg
 from common.report import write_reports
@@ -171,6 +171,12 @@ class GuardTests(unittest.TestCase):
         guard._check()
         self.assertTrue(guard.abort_event.is_set())
         self.assertEqual(guard.reason, "wall_time_exceeded")
+
+
+class HelpParsingTests(unittest.TestCase):
+    def test_looks_like_help(self) -> None:
+        self.assertTrue(looks_like_help("usage: api_server.py [-h] " + "x" * 300))
+        self.assertFalse(looks_like_help("Traceback: something failed"))
 
 
 class CommandTests(unittest.TestCase):
