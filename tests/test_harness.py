@@ -197,6 +197,18 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(remaining, ["--max-num-seqs"])
         self.assertNotIn("--served-model-name", engine.command())
 
+    def test_local_model_mount(self) -> None:
+        cfg = Config()
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp, True)
+        with open(os.path.join(tmp, "config.json"), "w", encoding="utf-8") as fh:
+            fh.write("{}")
+        cfg.model = tmp
+        engine = DockerEngine(cfg, "vllm", "arm", "run", tmp, [])
+        cmd = engine.docker_run_cmd()
+        self.assertIn(f"{tmp}:{tmp}:ro", cmd)
+        self.assertIn(tmp, engine.command())
+
     def test_sglang_command(self) -> None:
         cfg = Config()
         tmp = tempfile.mkdtemp()

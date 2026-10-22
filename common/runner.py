@@ -341,6 +341,11 @@ class ExperimentRunner:
             return
         if not self.cfg.model:
             raise SystemExit("model is empty")
+        if os.path.isabs(self.cfg.model):
+            if not os.path.isdir(self.cfg.model):
+                raise SystemExit(f"local model directory not found: {self.cfg.model}")
+            if not os.path.exists(os.path.join(self.cfg.model, "config.json")):
+                print(f"[WARN] local model directory has no config.json: {self.cfg.model}")
         if not (0.1 <= self.cfg.engine.gpu_memory_utilization <= 0.95):
             raise SystemExit("gpu_memory_utilization must be between 0.1 and 0.95")
         if self.cfg.engine.max_model_len < 2048:

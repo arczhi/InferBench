@@ -2,12 +2,13 @@ PY ?= python3
 ENGINE ?= all
 PROFILE ?= quick
 
-.PHONY: help test survey pull fetch-model dry-run smoke-kv smoke-cliff kv-quick cliff-quick kv-full cliff-full clean
+.PHONY: help test survey pull fetch-model fetch-model-ms dry-run smoke-kv smoke-cliff kv-quick cliff-quick kv-full cliff-full clean
 
 help:
 	@echo "make survey        # read-only host survey (run this first)"
 	@echo "make pull          # pull vLLM + SGLang through docker.m.daocloud.io"
 	@echo "make fetch-model   # pre-download the model into the shared volume"
+	@echo "make fetch-model-ms # download the model from ModelScope to /data/models"
 	@echo "make test          # stdlib unit tests (safe on any machine)"
 	@echo "make dry-run       # print docker commands and level plans"
 	@echo "make smoke-kv      # 1 arm, 8K, N=1,2"
@@ -28,6 +29,9 @@ pull:
 
 fetch-model:
 	./scripts/fetch_model.sh
+
+fetch-model-ms:
+	./scripts/fetch_model_modelscope.sh
 
 dry-run:
 	$(PY) -m exp_kv.run --profile smoke --engine vllm --dry-run

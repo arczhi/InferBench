@@ -38,6 +38,37 @@ Open `configs/lab.json`. Usually only these need to change:
 The harness also clamps container memory to 45 % of host RAM at load time and
 prints a warning. It does not silently raise limits.
 
+## 2.5 Model access (check this before pulling)
+
+The survey probes Hugging Face, hf-mirror, and ModelScope. If Hugging Face is
+unreachable, pick one of these:
+
+**A. Local model directory (recommended for offline hosts).** Download the model
+from ModelScope on the host (or copy it from another machine), then set an
+absolute path in `configs/lab.json`:
+
+```bash
+python3 -m pip install -U modelscope -i https://pypi.tuna.tsinghua.edu.cn/simple
+./scripts/fetch_model_modelscope.sh
+# writes /data/models/Qwen3-4B-Instruct-2507
+```
+
+```json
+"model": "/data/models/Qwen3-4B-Instruct-2507"
+```
+
+The harness bind-mounts that directory read-only into the container at the same
+absolute path. No Hugging Face access is needed at runtime.
+
+**B. Internal HF proxy.** Set `hf_endpoint` in `configs/lab.json` to your proxy
+and keep the repo id as `model`.
+
+**C. Pre-populate the HF cache volume.** Use `scripts/fetch_model.sh` on a machine
+with access, then copy the volume; this keeps the repo id as `model`.
+
+Do not start a run until one of these works; otherwise the engine startup will
+spend the full timeout retrying downloads.
+
 ## 3. Pull images
 
 ```bash

@@ -127,6 +127,7 @@ Details and tuning: [docs/SAFETY.md](docs/SAFETY.md).
 scripts/survey_l4.py      read-only host survey (stdlib)
 scripts/pull_images.sh    mirror pull + digest lock
 scripts/fetch_model.sh    pre-download the model into the shared volume
+scripts/fetch_model_modelscope.sh  download via ModelScope for offline hosts
 scripts/cleanup.sh        remove only experiment containers / old runs
 common/                   client, engine lifecycle, workload, guard, reports
 exp_kv/                   KV strategy arms, levels, analysis
@@ -160,7 +161,9 @@ is never written to disk.
   flags but cannot validate kernel support before startup; an unsupported arm
   fails cleanly and is recorded in `arm_summary.json`.
 - If Hugging Face is unreachable, set `hf_endpoint` to `https://hf-mirror.com` or
-  pre-populate the `inference-exp-hf` volume.
+  pre-populate the `inference-exp-hf` volume. On hosts where only ModelScope is
+  reachable, use `scripts/fetch_model_modelscope.sh`, then set `model` to the
+  absolute local path; the harness bind-mounts it read-only into the container.
 
 ## Known limitations
 

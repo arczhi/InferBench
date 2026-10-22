@@ -534,6 +534,8 @@ def _network(model: str) -> Dict[str, Any]:
         "docker_hub": "https://registry-1.docker.io/v2/",
         "huggingface": "https://huggingface.co/api/models/" + model,
         "hf_mirror": "https://hf-mirror.com/api/models/" + model,
+        "modelscope": "https://www.modelscope.cn/api/v1/models/" + model,
+        "pypi_tuna": "https://pypi.tuna.tsinghua.edu.cn/simple/",
     }
     data: Dict[str, Any] = {}
     for name, url in endpoints.items():
@@ -673,8 +675,21 @@ def _recommend(facts: Dict[str, Any]) -> Dict[str, Any]:
         issues.append({"level": "warn", "msg": "docker.m.daocloud.io not reachable (or TLS issue)"})
     hf = net.get("hf_mirror", {}).get("https", {})
     hf_main = net.get("huggingface", {}).get("https", {})
-    if net and not hf.get("ok") and not hf_main.get("ok"):
-        issues.append({"level": "warn", "msg": "neither hf-mirror.com nor huggingface.co reachable; pre-fetch the model"})
+    ms = net.get("modelscope", {}).get("https", {})
+    if net and not hf.get("ok") and not hf_main.get("ok") and not ms.get("ok"):
+        issues.append(
+            {
+                "level": "warn",
+                "msg": "no HF or ModelScope access; pre-fetch the model or use a local model path",
+            }
+        )
+    elif net and ms.get("ok") and not hf.get("ok"):
+        issues.append(
+            {
+                "level": "info",
+                "msg": "ModelScope reachable; use scripts/fetch_model_modelscope.sh",
+            }
+        )
 
     common = (facts.get("ports") or {}).get("listen_common") or {}
     busy = [p for p, is_busy in common.items() if is_busy]

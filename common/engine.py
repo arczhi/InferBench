@@ -321,6 +321,9 @@ class DockerEngine:
         ]
         if self.cfg.hf_endpoint:
             cmd += ["-e", f"HF_ENDPOINT={self.cfg.hf_endpoint}"]
+        model = self.cfg.model
+        if os.path.isabs(model) and os.path.isdir(model):
+            cmd += ["-v", f"{model}:{model}:ro"]
         token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
         if token:
             cmd += ["-e", "HF_TOKEN"]
