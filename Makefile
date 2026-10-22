@@ -2,7 +2,7 @@ PY ?= python3
 ENGINE ?= all
 PROFILE ?= quick
 
-.PHONY: help test survey pull fetch-model fetch-model-ms dry-run smoke-kv smoke-cliff kv-quick cliff-quick kv-full cliff-full clean
+.PHONY: help test survey pull fetch-model fetch-model-ms dry-run run-vllm-quick run-vllm-full smoke-kv smoke-cliff kv-quick cliff-quick kv-full cliff-full clean
 
 help:
 	@echo "make survey        # read-only host survey (run this first)"
@@ -54,6 +54,12 @@ kv-full:
 
 cliff-full:
 	$(PY) -m exp_cliff.run --profile full --engine $(ENGINE)
+
+run-vllm-quick:
+	./scripts/run_vllm_sequential.sh quick
+
+run-vllm-full:
+	./scripts/run_vllm_sequential.sh full
 
 clean:
 	./scripts/cleanup.sh --runs-keep 10

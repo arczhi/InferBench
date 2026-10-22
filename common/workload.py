@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import random
 from dataclasses import dataclass, field
@@ -232,7 +233,10 @@ def build_session(
 ) -> SessionSpec:
     session_seed = (seed * 1000003) ^ (level * 7919) ^ (session_id * 104729)
     rng = random.Random(session_seed)
-    system_prompt = build_system_prompt(system_tokens, session_seed, salt, agent=(mode == "agent"))
+    # The system prompt must be identical for every session in a cohort so that
+    # prefix caching can actually share it. Only the turns vary per session.
+    system_seed = int(hashlib.sha256(salt.encode("utf-8")).hexdigest()[:16], 16)
+    system_prompt = build_system_prompt(system_tokens, system_seed, salt, agent=(mode == "agent"))
     task = (
         f"You are session {session_id} in cohort {salt}. "
         "The operator will ask a sequence of operational questions. "

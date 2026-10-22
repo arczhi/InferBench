@@ -72,6 +72,14 @@ class WorkloadTests(unittest.TestCase):
         self.assertEqual([t.user_text for t in a.turns], [t.user_text for t in b.turns])
         self.assertNotEqual(a.system_prompt, c.system_prompt)
 
+    def test_system_prompt_shared_across_sessions(self) -> None:
+        a = build_session(4, 0, "same-cohort", "agent", 500, 3, 120, seed=17)
+        b = build_session(4, 1, "same-cohort", "agent", 500, 3, 120, seed=17)
+        self.assertEqual(a.system_prompt, b.system_prompt)
+        self.assertNotEqual(a.turns[0].user_text, b.turns[0].user_text)
+        c = build_session(4, 0, "other-cohort", "agent", 500, 3, 120, seed=17)
+        self.assertNotEqual(a.system_prompt, c.system_prompt)
+
     def test_budget_drops_old_turns(self) -> None:
         session = build_session(8, 2, "budget", "agent", 1000, 12, 500)
         history = []

@@ -123,7 +123,12 @@ def _metric_series(samples: Sequence[Dict[str, Any]], names: Sequence[str]) -> L
     return out
 
 
-CACHE_USAGE = ["vllm:gpu_cache_usage_perc", "sglang:token_usage"]
+CACHE_USAGE = [
+    "vllm:gpu_cache_usage_perc",
+    "vllm:kv_cache_usage_perc",
+    "vllm:cache_usage_perc",
+    "sglang:token_usage",
+]
 WAITING = ["vllm:num_requests_waiting", "sglang:num_queue_reqs"]
 RUNNING = ["vllm:num_requests_running", "sglang:num_running_reqs"]
 PREEMPTIONS = [
@@ -869,6 +874,14 @@ class ExperimentRunner:
                 self._aborted = True
                 self._abort_reason = guard.reason
                 result["abort_reason"] = guard.reason
+            if result["levels"] and not any(
+                ((level.get("engine") or {}).get("cache_usage_peak") or 0) > 0
+                for level in result["levels"]
+            ):
+                print(
+                    f"[WARN] no non-zero KV cache usage metric found for {arm.name}; "
+                    "inspect engine_metrics.jsonl and the engine /metrics names"
+                )
             result["cliff"] = cliff_analysis(result["levels"], cfg.slo)
             if self.analyzer:
                 try:
