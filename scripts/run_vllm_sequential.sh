@@ -13,6 +13,7 @@ set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT}"
 PROFILE="${1:-quick}"
+export PYTHONUNBUFFERED=1
 
 if [[ -z "${EXP_MODEL:-}" ]]; then
   if [[ -f /data/models/Qwen3-4B-Instruct-2507/config.json ]]; then
@@ -34,13 +35,13 @@ echo "model   : ${EXP_MODEL}"
 echo "started : $(date -Is)"
 echo
 
-python3 -m exp_kv.run --profile "${PROFILE}" --engine vllm
+python3 -u -m exp_kv.run --profile "${PROFILE}" --engine vllm
 KV_RC=$?
 echo
 echo "kv exit=${KV_RC} at $(date -Is)"
 echo
 
-python3 -m exp_cliff.run --profile "${PROFILE}" --engine vllm
+python3 -u -m exp_cliff.run --profile "${PROFILE}" --engine vllm
 CLIFF_RC=$?
 echo
 echo "cliff exit=${CLIFF_RC} at $(date -Is)"
