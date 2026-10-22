@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+runs/
+survey_*.json
+docker/images.lock.json
+nohup.out
+dist/
+.DS_Store

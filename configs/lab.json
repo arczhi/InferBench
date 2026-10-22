@@ -1,0 +1,58 @@
+{
+  "model": "Qwen/Qwen3-4B-Instruct-2507",
+  "served_model_name": "exp-model",
+  "hf_endpoint": "",
+  "docker": {
+    "mirror": "docker.m.daocloud.io",
+    "vllm_image": "docker.m.daocloud.io/vllm/vllm-openai:latest",
+    "sglang_image": "docker.m.daocloud.io/lmsysorg/sglang:latest",
+    "hf_cache_volume": "inference-exp-hf",
+    "container_memory_gb": 24,
+    "cpus": 6,
+    "cpu_shares": 512,
+    "shm_size_gb": 8,
+    "pids_limit": 4096,
+    "gpu_device": "0",
+    "python_bin": "python3",
+    "log_max_size": "200m",
+    "log_max_file": 2
+  },
+  "engine": {
+    "gpu_memory_utilization": 0.9,
+    "max_model_len": 32768,
+    "startup_timeout_s": 1800,
+    "request_timeout_s": 900,
+    "health_interval_s": 5,
+    "metrics_interval_s": 2,
+    "dtype": "bfloat16",
+    "vllm_port": 8000,
+    "sglang_port": 30000
+  },
+  "guard": {
+    "gpu_temp_warn_c": 80,
+    "gpu_temp_abort_c": 87,
+    "gpu_mem_used_abort_pct": 97,
+    "host_mem_avail_abort_mib": 1536,
+    "load_per_core_abort": 2.0,
+    "disk_free_abort_gb": 5,
+    "error_rate_abort": 0.5,
+    "error_window": 20,
+    "max_wall_s": 7200,
+    "cooldown_max_s": 180,
+    "cooldown_target_temp_c": 68,
+    "sample_interval_s": 1.0
+  },
+  "workload": {
+    "system_tokens": 10000,
+    "tool_result_tokens": 900,
+    "max_tokens": 64,
+    "turns": 12,
+    "warmup_tokens": 2048,
+    "request_timeout_s": 900
+  },
+  "slo": {
+    "ttft_p99_ms": 5000,
+    "tpot_p99_ms": 150,
+    "error_rate": 0.05
+  }
+}
