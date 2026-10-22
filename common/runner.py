@@ -369,10 +369,16 @@ class ExperimentRunner:
         docker = run_cmd(["docker", "info", "--format", "{{.ServerVersion}}"], timeout=15)
         if not docker["ok"]:
             raise SystemExit(f"docker daemon not reachable: {docker['err']}")
+        missing_kinds: List[str] = []
         for kind in sorted({arm.engine for arm in self.arms}):
             image = image_for(self.cfg, kind)
             if not run_cmd(["docker", "image", "inspect", image], timeout=20)["ok"]:
+                missing_kinds.append(kind)
                 print(f"[WARN] image missing for {kind}: {image} (arms will be skipped; run scripts/pull_images.sh)")
+        if missing_kinds and len(missing_kinds) == len({arm.engine for arm in self.arms}):
+            raise SystemExit(
+                "no engine image is present; run ./scripts/pull_images.sh before starting an experiment"
+            )
         cleanup_orphans(self.run_id)
         atomic_write_json(
             os.path.join(self.run_dir, "run_meta.json"),
@@ -761,6 +767,15 @@ class ExperimentRunner:
         }
         self._engine_samples: Dict[int, List[Dict[str, Any]]] = {}
         try:
+            if hasattr(engine, "ensure_image"):
+                try:
+                    engine.ensure_image()
+                except EngineStartError as exc:
+                    result["status"] = "skipped"
+                    result["skipped_reason"] = str(exc)
+                    print(f"[{utc_now()}] SKIP {arm.name}: {exc}")
+                    atomic_write_json(os.path.join(arm_dir, "skipped.json"), result)
+                    return result
             missing = engine.check_flags(engine.command())
             if "--enable-prefix-caching" in missing:
                 print(f"[{utc_now()}] note: --enable-prefix-caching not listed in this image; relying on v1 default")

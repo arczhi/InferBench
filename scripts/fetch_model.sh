@@ -23,6 +23,7 @@ docker image inspect "${MODEL_IMAGE}" >/dev/null 2>&1 || {
 
 ARGS=(
   run --rm
+  --pull=never
   --entrypoint python3
   -v "${VOLUME}:/root/.cache/huggingface"
   -e HF_HOME=/root/.cache/huggingface

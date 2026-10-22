@@ -176,11 +176,16 @@ class DockerEngine:
             with open(cache_path, "r", encoding="utf-8", errors="replace") as fh:
                 self._help_text = fh.read()
             return self._help_text
+        if not self._docker(["image", "inspect", self.image], timeout=20)["ok"]:
+            print(f"[WARN] cannot probe flags; image is not present: {self.image}")
+            self._help_text = ""
+            return self._help_text
         print(f"[{utc_now()}] probing engine flags in image (no GPU): {self.image}")
         res = self._docker(
             [
                 "run",
                 "--rm",
+                "--pull=never",
                 "--entrypoint",
                 self.cfg.docker.python_bin,
                 self.image,
@@ -277,6 +282,7 @@ class DockerEngine:
             "docker",
             "run",
             "-d",
+            "--pull=never",
             "--name",
             self.container_name,
             "--label",
